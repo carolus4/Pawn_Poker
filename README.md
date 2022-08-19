@@ -2,7 +2,7 @@
 
 The archetypal imperfect information game and one of the world's most famous card games. Build an AI to win big!
 
-![Make sure your AI doesn't cry blood when bluffing](images/casino_royal.jpeg)
+![Make sure your AI doesn't cry blood when bluffing](Images/casino_royal.jpeg)
 
 ## Rules of Poker
 
@@ -47,7 +47,7 @@ The winner will be the player with the highest number of chips at the end of all
 
 The competition & discussion will be in [Gather Town](https://app.gather.town/app/nJwquzJjD4TLKcTy/Delta%20Academy) at **6pm UTC on Sunday** (60 mins after submission deadline)!
 
-![Example knockout tournament tree](images/tournament_tree.png)
+![Example knockout tournament tree](Images/tournament_tree.png)
 
 ## Technical Details :hammer:
 
