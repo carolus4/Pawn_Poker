@@ -2,6 +2,7 @@ import numpy as np
 from torch import nn
 
 
+import math
 import random
 import torch
 import time
@@ -96,6 +97,36 @@ def mask(probs, legal_moves):
     # result = F.softmax(result)
 
 
+def pretty_print_state(state):
+    cards_in_hand = []
+    cards_revealed = []
+
+    for index in range(52):
+        if state[index] ==1:
+           cards_in_hand.append(index)
+        elif state[index] ==-1:
+            cards_revealed.append(index)
+
+    pretty_cards_in_hand = [pretty_card(i) for i in cards_in_hand]
+    pretty_cards_revealed = [pretty_card(i) for i in cards_revealed]
+    
+
+    print("Cards in hand: ", pretty_cards_in_hand)
+    print("Cards revealed: ", pretty_cards_revealed)
+
+def pretty_card(card_index):
+    suits = [ "♠", "♡", "♢", "♣"]
+    faces = ["J", "Q", "K"]
+
+    suit_number = math.floor(card_index / 13)
+
+    suit = suits[suit_number]
+    card = card_index - (suit_number * 13)
+    if card >= 10:
+        card = faces[card - 10]
+
+    return str(card) + suit
+
 def debug():
     print()
     initial_state = random_env.reset()
@@ -115,13 +146,16 @@ def debug():
 
     print("_____DEBUG 1-STEP_____")
 
-    debug_policy = Policy(s_size, a_size, 32)
+    debug_policy = get_policy()
+
     state, reward, done, info = random_env.reset()
     if done:
         return
     print("Debug initial state:", state)
     print("Debug intial info:", info)
     print("Done?: ", done)
+    pretty_print_state(state)
+
     debug_action, debug_logprob = debug_policy.act(state, info)
     print("Debug action: ", debug_action)
     print("Debug logprob: ", debug_logprob)
