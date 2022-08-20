@@ -132,13 +132,18 @@ def get_policy():
 
     # TODO - Try to load, except new policy
 
-    poker_policy = Policy(
-        poker_hyperparameters["state_space"],
-        poker_hyperparameters["action_space"],
-        poker_hyperparameters["h1_size"]
-    )
+    try:
+        poker_policy = load_network(TEAM_NAME)
+        print("LOADING Poker Play policy")
 
-    print("NEW Poker Play policy")
+    except:
+        poker_policy = Policy(
+            poker_hyperparameters["state_space"],
+            poker_hyperparameters["action_space"],
+            poker_hyperparameters["h1_size"]
+        )
+        print("NEW Poker Play policy")
+
     print(poker_policy)
     print()
 
