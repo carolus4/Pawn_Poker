@@ -30,13 +30,13 @@ a_size = random_env.action_space.n
 
 just_play = False
 
-training_episodes = 0 if just_play else 100
+training_episodes = 0 if just_play else 100000
 
 poker_hyperparameters = {
     "h1_size": 52,
     "n_training_episodes": training_episodes,
     "n_evaluation_episodes": 10,
-    "print_every": 10,
+    "print_every": 1000,
     "max_t": 100,
     "gamma": 1.0,
     "lr": 1e-3,
@@ -65,17 +65,35 @@ class Policy(nn.Module):
     def act(self, state, info):
         state = torch.from_numpy(state).float().unsqueeze(0)
         probs = self.forward(state)
+        probs = mask(probs, info["legal_moves"])
         m = Categorical(probs)
-
-        # Note - need to implement the re-base probability sampling
-
-        # while action.item() not in info["legal_moves"]:
-        #     try:
-        #         action = m.sample()
-        #     except:
-        #         pass
-
+        action = m.sample()
+        
         return action.item(), m.log_prob(action)
+
+def mask(probs, legal_moves): 
+    # Initial masking
+    mask_legal_moves = []
+    for i in range(4):
+        if i in legal_moves:
+            mask_legal_moves.append(1.)
+        else:
+            mask_legal_moves.append(0)
+    mask_legal_moves = torch.Tensor(mask_legal_moves)
+
+    result = torch.nn.functional.softmax(probs * mask_legal_moves)
+    result = result * mask_legal_moves
+    result = result / (result.sum() + 1e-13)
+
+    return result
+
+    # # Equivalent to Mask Multiply
+    # for option in range(4):
+    #     if option in actions and option in legal_moves:
+    #         ma
+    
+    # # Rebase
+    # result = F.softmax(result)
 
 
 def debug():
@@ -99,8 +117,11 @@ def debug():
 
     debug_policy = Policy(s_size, a_size, 32)
     state, reward, done, info = random_env.reset()
+    if done:
+        return
     print("Debug initial state:", state)
     print("Debug intial info:", info)
+    print("Done?: ", done)
     debug_action, debug_logprob = debug_policy.act(state, info)
     print("Debug action: ", debug_action)
     print("Debug logprob: ", debug_logprob)
@@ -139,7 +160,7 @@ def get_optimizer(policy):
     print()
     return poker_optimizer
 
-TEAM_NAME = "Pawn"  # <---- Enter your team name here!
+TEAM_NAME = "Pawn_vRandom"  # <---- Enter your team name here!
 assert TEAM_NAME != "Team Name", "Please change your TEAM_NAME!"
 
 
@@ -163,6 +184,9 @@ def train(policy, optimizer, n_training_episodes, max_t, gamma,
         state, reward, done, info = random_env.reset()
         # TODO - train against other envs
 
+        if done == True:
+            continue
+
         for t in range(max_t):
             action, logprob = policy.act(state, info)
             saved_log_probs.append(logprob)
@@ -170,12 +194,35 @@ def train(policy, optimizer, n_training_episodes, max_t, gamma,
             rewards.append(reward)
             if done:
                 break 
-                # Note - I dont think this setup ever breaks?
         
         scores_deque.append(sum(rewards))
         scores.append(sum(rewards))
 
         discounts = [gamma ** i for i in range(len(rewards))]
+
+        R = sum([a * b for a, b in zip(discounts, rewards)])
+
+        policy_loss =[]
+
+        for log_prob in saved_log_probs:
+            policy_loss.append( -log_prob * R)
+        policy_loss = torch.cat(policy_loss).sum()
+
+        optimizer.zero_grad()
+        policy_loss.backward()
+        optimizer.step()
+
+        if i_episode % print_every == 0:
+            current = time.time()
+            total_time_s = round(current-start)
+            print("Episode {}\tAverage Score: {:.2f}\tElapsed: {:3}".format(
+                i_episode, np.mean(scores_deque),total_time_s))
+
+    end = time.time()
+    print(end-start)
+
+    return policy
+
         # Is this correct? Are games independent? 
         # Should they be??
 
@@ -220,7 +267,7 @@ if __name__ == "__main__":
 
     my_network = train(policy, optimizer, n_training_episodes, max_t, gamma,
                        print_every)
-    save_network(neural_network, TEAM_NAME)
+    save_network(my_network, TEAM_NAME)
 
     # check_submission(TEAM_NAME)
 
