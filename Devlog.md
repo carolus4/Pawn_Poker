@@ -66,5 +66,5 @@ I also am running across a number of issues with the game having no legal moves.
 
 ![Returns over time, batch 1](Images/Step1_results.png)
 
-## Step 2 - Sample behaviour on some expected scenarions
+## Step 2 - Sample behaviour on some expected scenarios
 Pocket Aces should have a high probability to raise. Let's start with that!
