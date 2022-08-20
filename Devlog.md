@@ -29,12 +29,23 @@ I think it's fair, based on some of the augmentation of state - e.g. [Mugit's sp
 `[...]`
 
 
-### Mask Output state
+### [ ✓ ] Mask Output state
 We know some actions are illegal, and should not be chosen. There is an implementation that can be selected for choose_move (or in training?)
 
+### Check Submission 
+After step 1, I am unsure if choose move will successfully return an action for every state.  
+It *should* be OK, as I am only seeing errors when the state is 'done' - which shouldnt call 'act' - but this needs to be checked.
+
+<span style="color:red">TODO</span>
 
 # Iterations on architectures:
 
 ## Step 1 - implement the very naive 
-Policy Gradient Algorithm from last time.
+The Policy Gradient Algorithm from last time seems to 'learn' naively to play against a random opponent.
 
+Iterations are much faster than in the previous game, so I tried running training over 100k episodes
+
+To get this to run, I needed to implement the masking code.
+I also am running across a number of issues with the game having no legal moves. This may be a problem in the actual submission - tbd!
+
+![Returns over time, batch 1](Images/Step1_results.png)
