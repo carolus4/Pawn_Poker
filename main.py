@@ -30,13 +30,13 @@ a_size = random_env.action_space.n
 
 just_play = False
 
-training_episodes = 0 if just_play else 1000
+training_episodes = 0 if just_play else 100
 
 poker_hyperparameters = {
-    "h1_size": 200,
+    "h1_size": 52,
     "n_training_episodes": training_episodes,
     "n_evaluation_episodes": 10,
-    "print_every": 100,
+    "print_every": 10,
     "max_t": 100,
     "gamma": 1.0,
     "lr": 1e-3,
@@ -62,12 +62,19 @@ class Policy(nn.Module):
         x = self.fc2(x)
         return F.softmax(x, dim=-1)
 
-    def act(self, state):
-        state = torch.from_numpy(state[0]).float().unsqueeze(0)
+    def act(self, state, info):
+        state = torch.from_numpy(state).float().unsqueeze(0)
         probs = self.forward(state)
         m = Categorical(probs)
 
-        action = m.sample()
+        # Note - need to implement the re-base probability sampling
+
+        # while action.item() not in info["legal_moves"]:
+        #     try:
+        #         action = m.sample()
+        #     except:
+        #         pass
+
         return action.item(), m.log_prob(action)
 
 
@@ -91,7 +98,10 @@ def debug():
     print("_____DEBUG 1-STEP_____")
 
     debug_policy = Policy(s_size, a_size, 32)
-    debug_action, debug_logprob = debug_policy.act(random_env.reset())
+    state, reward, done, info = random_env.reset()
+    print("Debug initial state:", state)
+    print("Debug intial info:", info)
+    debug_action, debug_logprob = debug_policy.act(state, info)
     print("Debug action: ", debug_action)
     print("Debug logprob: ", debug_logprob)
     print()
@@ -140,6 +150,8 @@ def train(policy, optimizer, n_training_episodes, max_t, gamma,
         pytorch network
     """
 
+    print("_____Training ...______")
+
     scores_deque = deque(maxlen=print_every)
     scores = []
 
@@ -148,14 +160,14 @@ def train(policy, optimizer, n_training_episodes, max_t, gamma,
     for i_episode in range(1, n_training_episodes + 1):
         saved_log_probs = []
         rewards = []
-        state = random_env.reset()
+        state, reward, done, info = random_env.reset()
         # TODO - train against other envs
 
         for t in range(max_t):
-            action, logprob = policy.act(state)
+            action, logprob = policy.act(state, info)
             saved_log_probs.append(logprob)
-            state, reward, done, _ = random_env.step(action)
-            rewards.appen(reward)
+            state, reward, done, info = random_env.step(action)
+            rewards.append(reward)
             if done:
                 break 
                 # Note - I dont think this setup ever breaks?
@@ -198,14 +210,19 @@ def choose_move(state: np.ndarray, legal_moves: np.ndarray,
 if __name__ == "__main__":
 
     debug()
-    get_policy()
-    ## Example workflow, feel free to edit this! ###
-    neural_network = train()
+    policy = get_policy()
+    optimizer = get_optimizer(policy)
+
+    n_training_episodes = poker_hyperparameters["n_training_episodes"]
+    max_t = poker_hyperparameters["max_t"]
+    gamma = poker_hyperparameters["gamma"]
+    print_every = poker_hyperparameters["print_every"]
+
+    my_network = train(policy, optimizer, n_training_episodes, max_t, gamma,
+                       print_every)
     save_network(neural_network, TEAM_NAME)
 
     # check_submission(TEAM_NAME)
-
-    neural_network = load_network(TEAM_NAME)
 
     # Code below plays a single game against a random
     #  opponent, think about how you might want to adapt this to
@@ -216,13 +233,13 @@ if __name__ == "__main__":
 
         This converts choose_move() to that format.
         """
-        return choose_move(state, legal_moves, neural_network)
+        return choose_move(state, legal_moves, my_network)
 
     # Challenge your bot to a game of poker!
-    play_poker(
-        your_choose_move=human_player,
-        opponent_choose_move=choose_move_no_network,
-        game_speed_multiplier=10,
-        render=True,
-        verbose=True,
-    )
+    # play_poker(
+    #     your_choose_move=human_player,
+    #     opponent_choose_move=choose_move_no_network,
+    #     game_speed_multiplier=10,
+    #     render=True,
+    #     verbose=True,
+    # )
